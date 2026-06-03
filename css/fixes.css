@@ -1,0 +1,709 @@
+/* ============================================================
+   NutriVision AI — Comprehensive Fixes
+   fixes.css — Loaded last, highest priority
+   ============================================================ */
+
+/* ============================================================
+   1. MODAL & OVERLAY — Full Viewport-Safe System
+   ============================================================ */
+
+/* Modal container: truly covers viewport, not just app */
+#modal-container {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  z-index: 9000 !important;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+#modal-container.active {
+  pointer-events: all;
+}
+
+/* Backdrop overlay */
+.modal-overlay {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  background: rgba(0, 0, 0, 0.7) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  z-index: 9001 !important;
+  pointer-events: all;
+}
+
+/* Bottom sheet modal */
+.modal-sheet {
+  position: fixed !important;
+  bottom: 0 !important;
+  left: 50% !important;
+  transform: translateX(-50%) translateY(0) !important;
+  width: 100% !important;
+  max-width: 480px !important;
+  max-height: 85dvh !important;
+  min-height: 120px;
+  background: rgba(18, 18, 26, 0.97) !important;
+  backdrop-filter: blur(40px) saturate(1.8) !important;
+  -webkit-backdrop-filter: blur(40px) saturate(1.8) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-bottom: none !important;
+  border-radius: 28px 28px 0 0 !important;
+  padding: 8px 0 0 !important;
+  z-index: 9002 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  box-shadow: 0 -20px 60px rgba(0, 0, 0, 0.6) !important;
+  animation: sheetSlideUp 0.35s cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+
+@keyframes sheetSlideUp {
+  from { transform: translateX(-50%) translateY(100%); }
+  to   { transform: translateX(-50%) translateY(0); }
+}
+
+.modal-sheet.animate-slideDown {
+  animation: sheetSlideDown 0.25s ease both !important;
+}
+
+@keyframes sheetSlideDown {
+  from { transform: translateX(-50%) translateY(0); }
+  to   { transform: translateX(-50%) translateY(110%); }
+}
+
+/* Sheet handle bar */
+.modal-handle {
+  flex-shrink: 0;
+  width: 40px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+  margin: 10px auto 4px auto;
+  cursor: grab;
+}
+
+/* Sheet title */
+.modal-title {
+  padding: 12px 24px 4px;
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  flex-shrink: 0;
+}
+
+/* Scrollable content area inside sheet */
+.modal-content {
+  flex: 1;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  padding: 8px 24px calc(24px + env(safe-area-inset-bottom, 16px));
+  min-height: 0;
+}
+
+/* Center/dialog modal variant */
+.modal-center {
+  position: fixed !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) scale(1) !important;
+  width: calc(100% - 40px) !important;
+  max-width: 400px !important;
+  max-height: calc(100dvh - 80px) !important;
+  background: rgba(18, 18, 26, 0.97) !important;
+  backdrop-filter: blur(40px) !important;
+  -webkit-backdrop-filter: blur(40px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-radius: 24px !important;
+  overflow: hidden !important;
+  z-index: 9002 !important;
+  animation: centerModalIn 0.3s cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+
+@keyframes centerModalIn {
+  from { opacity: 0; transform: translate(-50%, -50%) scale(0.9); }
+  to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+/* ============================================================
+   2. TOAST — Always Visible, Above Everything
+   ============================================================ */
+#toast-container {
+  position: fixed !important;
+  top: calc(max(16px, env(safe-area-inset-top, 16px))) !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  width: calc(100% - 32px) !important;
+  max-width: 400px !important;
+  z-index: 99999 !important;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.toast {
+  pointer-events: all;
+  animation: toastIn 0.4s cubic-bezier(0.32, 0.72, 0, 1) both;
+  border-radius: 16px !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
+}
+
+@keyframes toastIn {
+  from { opacity: 0; transform: translateY(-20px) scale(0.95); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ============================================================
+   3. AUTH SCREENS — Beautiful Login / Signup
+   ============================================================ */
+.nv-auth {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Animated gradient mesh background */
+.nv-auth::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 80% 60% at 20% 0%, rgba(108, 92, 231, 0.2) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 80% 100%, rgba(0, 206, 201, 0.18) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 40% at 50% 50%, rgba(253, 121, 168, 0.1) 0%, transparent 70%);
+  pointer-events: none;
+  animation: gradientMesh 8s ease-in-out infinite alternate;
+}
+
+@keyframes gradientMesh {
+  0% { opacity: 0.8; }
+  100% { opacity: 1; }
+}
+
+.nv-auth-inner {
+  width: 100%;
+  max-width: 380px;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+}
+
+/* Logo section */
+.auth-logo-section {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.auth-logo-icon {
+  width: 80px;
+  height: 80px;
+  border-radius: 24px;
+  background: linear-gradient(135deg, #6c5ce7, #a29bfe);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  margin: 0 auto 16px auto;
+  box-shadow:
+    0 12px 40px rgba(108, 92, 231, 0.45),
+    0 0 0 1px rgba(255,255,255,0.1) inset;
+  animation: float 3s ease-in-out infinite;
+  position: relative;
+}
+
+.auth-logo-icon::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 26px;
+  background: linear-gradient(135deg, rgba(108,92,231,0.6), rgba(0,206,201,0.4), rgba(253,121,168,0.3));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  padding: 2px;
+  pointer-events: none;
+}
+
+.auth-title {
+  font-family: var(--font-display);
+  font-size: 2.2rem;
+  font-weight: 900;
+  color: var(--text-primary);
+  margin: 0;
+  line-height: 1.15;
+  letter-spacing: -0.5px;
+}
+
+.auth-subtitle {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  margin-top: 6px;
+  line-height: 1.5;
+}
+
+/* Auth card */
+.auth-card {
+  width: 100%;
+  padding: 28px 24px;
+  background: linear-gradient(145deg, rgba(255,255,255,0.09) 0%, rgba(255,255,255,0.03) 100%);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 24px;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.07);
+  margin-bottom: 20px;
+  animation: fadeInUp 0.5s ease both;
+  position: relative;
+}
+
+.auth-card-title {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-bottom: 20px;
+}
+
+/* Auth input wrapper */
+.auth-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.auth-input-icon {
+  position: absolute;
+  left: 14px;
+  width: 16px;
+  height: 16px;
+  color: var(--text-secondary);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.auth-input {
+  width: 100%;
+  padding: 13px 14px 13px 44px;
+  background: rgba(255,255,255,0.05);
+  border: 1.5px solid rgba(255,255,255,0.1);
+  border-radius: 14px;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  font-family: var(--font-sans);
+  transition: all 0.2s ease;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.auth-input::placeholder {
+  color: rgba(255,255,255,0.25);
+}
+
+.auth-input:focus {
+  border-color: var(--accent-teal);
+  background: rgba(0, 206, 201, 0.05);
+  box-shadow: 0 0 0 3px rgba(0, 206, 201, 0.12);
+}
+
+/* Auth submit button */
+.auth-submit-btn {
+  width: 100%;
+  height: 52px;
+  border: none;
+  border-radius: 26px;
+  background: linear-gradient(135deg, #6c5ce7, #a29bfe);
+  color: #fff;
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 8px 28px rgba(108, 92, 231, 0.45);
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 4px;
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-submit-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.12), transparent);
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.auth-submit-btn:active {
+  transform: scale(0.97);
+  box-shadow: 0 4px 16px rgba(108, 92, 231, 0.3);
+}
+
+/* Auth footer links */
+.auth-footer-text {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  text-align: center;
+  margin-bottom: 12px;
+  animation: fadeIn 0.6s ease both;
+  animation-delay: 200ms;
+}
+
+.auth-link {
+  color: var(--accent-teal);
+  font-weight: 700;
+  transition: color 0.15s;
+  cursor: pointer;
+}
+
+.auth-link:hover {
+  color: var(--accent-teal-light);
+}
+
+.auth-guest-btn {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.3);
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transition: color 0.15s;
+  padding: 4px 8px;
+}
+
+.auth-guest-btn:hover {
+  color: rgba(255,255,255,0.6);
+}
+
+/* Input group spacing */
+.auth-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.auth-input-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--text-secondary);
+}
+
+/* ============================================================
+   4. SCANNER — Full-Screen, No Clipping
+   ============================================================ */
+.nv-scanner {
+  position: fixed !important;
+  inset: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100dvh !important;
+  width: 100% !important;
+  background: #050508 !important;
+  z-index: 1 !important;
+  overflow: hidden !important;
+}
+
+.nv-results {
+  position: fixed !important;
+  inset: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100dvh !important;
+  width: 100% !important;
+  max-width: 480px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  background: var(--bg-primary) !important;
+  z-index: 1 !important;
+  overflow: hidden !important;
+}
+
+.nv-results-body {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  padding: 16px;
+  min-height: 0;
+}
+
+.nv-results-footer {
+  flex-shrink: 0;
+  padding: 12px 16px calc(16px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--glass-border);
+  background: rgba(10, 10, 15, 0.95);
+  backdrop-filter: blur(20px);
+}
+
+/* ============================================================
+   5. SCREEN CONTAINER — Correct Overflow & Scroll
+   ============================================================ */
+#screen-container {
+  height: 100dvh !important;
+  max-height: 100dvh !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+  box-sizing: border-box;
+}
+
+/* ============================================================
+   6. DIARY SCREEN — Fix Overflow
+   ============================================================ */
+.diary-screen,
+.analytics-screen,
+.profile-screen,
+.streaks-screen {
+  min-height: calc(100dvh - var(--nav-height, 72px));
+  overflow-y: visible !important;
+  overflow-x: hidden;
+}
+
+/* ============================================================
+   7. FOOD CARD & DETAIL — Viewport Safe
+   ============================================================ */
+.food-card-detail {
+  max-height: 80dvh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Achievement/detail panel */
+.achievement-panel,
+.detail-panel {
+  max-height: 80dvh;
+  overflow-y: auto;
+}
+
+/* ============================================================
+   8. NAV BAR — Correct Positioning
+   ============================================================ */
+#nav-container {
+  position: fixed !important;
+  bottom: 0 !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  width: 100% !important;
+  max-width: 480px !important;
+  z-index: 500 !important;
+}
+
+/* ============================================================
+   9. ENHANCED ANIMATIONS & MICRO-INTERACTIONS
+   ============================================================ */
+
+/* Particle orbit animation for auth screens */
+@keyframes orbitFloat {
+  0%   { transform: translate(0, 0) rotate(0deg); opacity: 0.4; }
+  25%  { transform: translate(10px, -15px) rotate(90deg); opacity: 0.7; }
+  50%  { transform: translate(20px, 0px) rotate(180deg); opacity: 0.4; }
+  75%  { transform: translate(10px, 15px) rotate(270deg); opacity: 0.7; }
+  100% { transform: translate(0, 0) rotate(360deg); opacity: 0.4; }
+}
+
+/* Glassmorphism shimmer sweep */
+@keyframes glassSweep {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* Auth card glow pulse */
+@keyframes authGlow {
+  0%   { box-shadow: 0 16px 48px rgba(0,0,0,0.4), 0 0 0 1px rgba(108,92,231,0.1); }
+  50%  { box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 40px rgba(108,92,231,0.15), 0 0 0 1px rgba(108,92,231,0.25); }
+  100% { box-shadow: 0 16px 48px rgba(0,0,0,0.4), 0 0 0 1px rgba(108,92,231,0.1); }
+}
+
+.auth-card:focus-within {
+  animation: authGlow 2s ease-in-out infinite;
+}
+
+/* Enhanced button ripple */
+.nv-btn-primary,
+.auth-submit-btn {
+  overflow: hidden;
+  position: relative;
+}
+
+.nv-btn-primary::after,
+.auth-submit-btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent 50%);
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.nv-btn-primary:hover::after,
+.auth-submit-btn:hover::after {
+  opacity: 1;
+}
+
+/* Card hover lift effect */
+.nv-glass {
+  transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+}
+
+/* ============================================================
+   10. SCROLLABLE SCREEN CONTENT — Prevent Body Overflow
+   ============================================================ */
+.home-screen,
+.nv-home {
+  overflow-y: visible !important;
+  overflow-x: hidden;
+  padding-bottom: calc(var(--nav-height, 72px) + 24px + env(safe-area-inset-bottom, 0px));
+}
+
+/* ============================================================
+   11. GLOBAL RESPONSIVE RULES
+   ============================================================ */
+@media (max-width: 390px) {
+  .modal-sheet {
+    max-height: 90dvh !important;
+  }
+  
+  .auth-title {
+    font-size: 1.9rem;
+  }
+  
+  .nv-calorie-hero {
+    font-size: 2.8rem;
+  }
+}
+
+@media (min-width: 500px) {
+  .modal-sheet {
+    border-radius: 28px 28px 0 0 !important;
+  }
+}
+
+/* ============================================================
+   12. IMMERSIVE BACKGROUND VIDEO
+   ============================================================ */
+#bg-video {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: -1;
+  opacity: 0.06;
+  pointer-events: none;
+}
+
+#bg-layer {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: var(--bg-primary);
+  pointer-events: none;
+}
+
+/* ============================================================
+   13. PROFILE SCREEN MODAL FIXES
+   ============================================================ */
+.profile-goals-modal,
+.profile-edit-modal {
+  max-height: 80dvh;
+  overflow-y: auto;
+  padding: 16px 0;
+}
+
+/* ============================================================
+   14. DIARY SCREEN FIXES
+   ============================================================ */
+.diary-food-detail {
+  max-height: 75dvh;
+  overflow-y: auto;
+  padding: 16px;
+}
+
+/* ============================================================
+   15. STREAKS ACHIEVEMENT PANEL
+   ============================================================ */
+.achievement-detail-content {
+  max-height: 70dvh;
+  overflow-y: auto;
+  padding: 16px;
+}
+
+/* ============================================================
+   16. WATER TRACKER MODAL
+   ============================================================ */
+.water-custom-modal {
+  padding: 16px 0 8px;
+}
+
+/* ============================================================
+   17. ANALYTICS CHART CONTAINERS
+   ============================================================ */
+.analytics-chart-container {
+  overflow: visible;
+  position: relative;
+}
+
+/* ============================================================
+   18. LOADING STATE IMPROVEMENTS
+   ============================================================ */
+.scanner-processing-page {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 2 !important;
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+/* ============================================================
+   19. LIGHT THEME MODAL ADJUSTMENTS
+   ============================================================ */
+[data-theme="light"] .modal-sheet {
+  background: rgba(245, 245, 247, 0.97) !important;
+  border-color: rgba(0, 0, 0, 0.1) !important;
+}
+
+[data-theme="light"] .modal-overlay {
+  background: rgba(0, 0, 0, 0.45) !important;
+}
+
+/* ============================================================
+   20. SAFE AREA GLOBAL PADDING
+   ============================================================ */
+.screen {
+  padding-top: max(20px, calc(20px + env(safe-area-inset-top, 0px))) !important;
+  padding-bottom: calc(var(--nav-height, 72px) + 40px + env(safe-area-inset-bottom, 0px)) !important;
+  overflow-y: visible !important;
+  box-sizing: border-box !important;
+}

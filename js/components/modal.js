@@ -1,90 +1,116 @@
-// modal.js — Slide-up bottom sheets with backdrop blur overlay
-export function showModal({ title, content, onClose, showHandle = true }) {
+// modal.js — Fully viewport-safe modal sheets & center dialogs
+export function showModal({ title, content, onClose, showHandle = true, variant = 'sheet' }) {
   const container = document.getElementById('modal-container');
   if (!container) return { close: () => {} };
 
-  container.innerHTML = '';
+  // Clear any existing modal
+  _clearModal(container);
   container.classList.add('active');
 
+  // Backdrop
   const overlay = document.createElement('div');
-  overlay.className = 'modal-overlay animate-fadeIn';
-  
-  const sheet = document.createElement('div');
-  sheet.className = 'modal-sheet animate-slideUp';
-
-  let handleHtml = '';
-  if (showHandle) {
-    handleHtml = `<div class="modal-handle" style="width: 40px; height: 5px; background: rgba(255,255,255,0.2); border-radius: 10px; margin: 8px auto 16px auto; cursor: grab;"></div>`;
-  }
-
-  const titleHtml = title ? `<h3 class="modal-title font-display" style="font-size: 1.25rem; font-weight: 700; color: var(--text-primary); margin-bottom: 16px; padding: 0 4px;">${title}</h3>` : '';
-
-  sheet.innerHTML = `
-    ${handleHtml}
-    ${titleHtml}
-    <div class="modal-content" style="max-height: 70dvh; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));"></div>
+  overlay.className = 'modal-overlay';
+  overlay.style.cssText = `
+    position: fixed; inset: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.7); backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px); z-index: 9001;
+    animation: fadeIn 0.25s ease both;
   `;
 
-  const contentArea = sheet.querySelector('.modal-content');
+  // Sheet
+  const sheet = document.createElement('div');
+  sheet.className = 'modal-sheet';
+
+  // Handle
+  if (showHandle) {
+    const handle = document.createElement('div');
+    handle.className = 'modal-handle';
+    handle.style.cssText = `
+      flex-shrink: 0; width: 40px; height: 4px;
+      background: rgba(255,255,255,0.2); border-radius: 10px;
+      margin: 10px auto 4px auto; cursor: grab;
+    `;
+    sheet.appendChild(handle);
+  }
+
+  // Title
+  if (title) {
+    const titleEl = document.createElement('div');
+    titleEl.className = 'modal-title font-display';
+    titleEl.style.cssText = `
+      padding: 12px 24px 8px; font-size: 1.2rem; font-weight: 800;
+      color: var(--text-primary); flex-shrink: 0;
+      font-family: var(--font-display);
+    `;
+    titleEl.textContent = title;
+    sheet.appendChild(titleEl);
+  }
+
+  // Scrollable content area
+  const contentArea = document.createElement('div');
+  contentArea.className = 'modal-content';
+  contentArea.style.cssText = `
+    flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain; min-height: 0;
+    padding: 8px 24px calc(24px + env(safe-area-inset-bottom, 16px));
+  `;
+
   if (typeof content === 'string') {
     contentArea.innerHTML = content;
   } else if (content instanceof HTMLElement) {
     contentArea.appendChild(content);
   }
 
+  sheet.appendChild(contentArea);
   container.appendChild(overlay);
   container.appendChild(sheet);
 
+  // Init lucide icons inside modal
   if (window.lucide) {
-    window.lucide.createIcons();
+    window.lucide.createIcons({ rootElement: sheet });
   }
 
   function close() {
-    overlay.classList.remove('animate-fadeIn');
-    overlay.classList.add('animate-fadeOut');
-    sheet.classList.remove('animate-slideUp');
-    sheet.classList.add('animate-slideDown');
-
+    sheet.style.animation = 'sheetSlideDown 0.25s ease both';
+    overlay.style.animation = 'fadeOut 0.2s ease both';
     setTimeout(() => {
-      container.innerHTML = '';
-      container.classList.remove('active');
+      _clearModal(container);
       if (onClose) onClose();
-    }, 250);
+    }, 260);
   }
 
   overlay.addEventListener('click', close);
-  
-  // Drag to dismiss handler
-  const handle = sheet.querySelector('.modal-handle');
-  if (handle) {
-    let startY = 0;
-    let currentY = 0;
-    let isDragging = false;
 
-    handle.addEventListener('touchstart', (e) => {
-      startY = e.touches[0].clientY;
-      isDragging = true;
+  // Drag-to-dismiss
+  const handleEl = sheet.querySelector('.modal-handle');
+  if (handleEl) {
+    let startY = 0, currentY = 0, dragging = false;
+
+    handleEl.addEventListener('pointerdown', (e) => {
+      startY = e.clientY;
+      dragging = true;
       sheet.style.transition = 'none';
+      handleEl.setPointerCapture(e.pointerId);
     });
 
-    handle.addEventListener('touchmove', (e) => {
-      if (!isDragging) return;
-      currentY = e.touches[0].clientY;
-      const deltaY = currentY - startY;
-      if (deltaY > 0) {
-        sheet.style.transform = `translateY(${deltaY}px)`;
+    handleEl.addEventListener('pointermove', (e) => {
+      if (!dragging) return;
+      currentY = e.clientY;
+      const delta = currentY - startY;
+      if (delta > 0) {
+        sheet.style.transform = `translateX(-50%) translateY(${delta}px)`;
       }
     });
 
-    handle.addEventListener('touchend', (e) => {
-      if (!isDragging) return;
-      isDragging = false;
+    handleEl.addEventListener('pointerup', () => {
+      if (!dragging) return;
+      dragging = false;
       sheet.style.transition = 'transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)';
-      const deltaY = currentY - startY;
-      if (deltaY > 100) {
+      const delta = currentY - startY;
+      if (delta > 100) {
         close();
       } else {
-        sheet.style.transform = 'translateY(0)';
+        sheet.style.transform = 'translateX(-50%) translateY(0)';
       }
     });
   }
@@ -94,4 +120,9 @@ export function showModal({ title, content, onClose, showHandle = true }) {
 
 export function showSheet({ content, onClose }) {
   return showModal({ content, onClose, showHandle: true });
+}
+
+function _clearModal(container) {
+  container.innerHTML = '';
+  container.classList.remove('active');
 }

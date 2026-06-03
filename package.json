@@ -11,5 +11,34 @@
   },
   "devDependencies": {
     "vite": "^6.3.5"
-  }
+  },
+  "main": "vite.config.js",
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "esbuild": "^0.25.12",
+    "express": "^5.2.1",
+    "fdir": "^6.5.0",
+    "multer": "^2.1.1",
+    "mysql2": "^3.22.4",
+    "nanoid": "^3.3.12",
+    "picocolors": "^1.1.1",
+    "picomatch": "^4.0.4",
+    "postcss": "^8.5.15",
+    "rollup": "^4.60.4",
+    "source-map-js": "^1.2.1",
+    "tinyglobby": "^0.2.16"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/athersh123/cal-ai.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/athersh123/cal-ai/issues"
+  },
+  "homepage": "https://github.com/athersh123/cal-ai#readme"
 }

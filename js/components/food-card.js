@@ -35,11 +35,13 @@ export function createFoodCard({ food, onDelete, onEdit, onTap, showDelete = tru
   const emoji = food.icon || '🍲';
   const confidencePercent = food.confidence ? Math.round(food.confidence * 100) : null;
 
+  const previewHtml = food.thumbDataUrl
+    ? `<img class="food-card-image" src="${food.thumbDataUrl}" alt="${String(food.name || 'Food').replace(/\"/g, '&quot;')}" />`
+    : `<div class="food-emoji" style="font-size: 1.8rem; width: 52px; height: 52px; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.06); border-radius: var(--radius-md); border: 1px solid var(--glass-border);">${emoji}</div>`;
+
   card.innerHTML = `
     <div style="display: flex; align-items: center; gap: 12px; width: 100%;">
-      <div class="food-emoji" style="font-size: 1.8rem; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.06); border-radius: var(--radius-md); border: 1px solid var(--glass-border);">
-        ${emoji}
-      </div>
+      ${previewHtml}
       <div style="flex: 1; min-width: 0;">
         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
           <h4 class="font-display" style="font-size: 0.95rem; font-weight: 600; color: var(--text-primary); margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px;">

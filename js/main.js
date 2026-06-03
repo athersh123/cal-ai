@@ -2,6 +2,10 @@ import { store } from './store.js';
 import { router } from './router.js';
 import { theme } from './theme.js';
 import { createNavBar } from './components/nav-bar.js';
+import { checkAchievements } from './data/achievements.js';
+
+// Register achievement checker globally so store.js can access it without circular imports
+window.__nvAchievementChecker = checkAchievements;
 
 // Import all screens
 import * as login from './screens/login.js';
@@ -50,22 +54,27 @@ function initApp() {
     }
   };
   
-  // Initial route routing
-  if (!store.isAuthenticated()) {
-    router.navigate('login');
-  } else if (!store.isOnboarded()) {
-    router.navigate('onboarding');
-  } else {
-    const hash = window.location.hash.slice(1) || 'home';
-    if (['login', 'signup', 'onboarding', 'home', 'scanner', 'diary', 'analytics', 'profile', 'streaks'].includes(hash)) {
-      router.navigate(hash);
-    } else {
-      router.navigate('home');
-    }
-  }
+ // Initial route routing
+
+// Initial route routing
+
+const isLoggedIn = localStorage.getItem("isLoggedIn");
+const lastRoute = localStorage.getItem("currentRoute");
+
+if (!isLoggedIn) {
+
+  router.navigate("login");
+
+} else {
+
+  router.navigate(
+    lastRoute || "home"
+  );
+
 }
 
-// Wait for DOM
+} // <-- CLOSE initApp() HERE
+
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initApp);
 } else {

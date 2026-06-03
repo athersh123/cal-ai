@@ -5,8 +5,6 @@ import { createProgressRing } from '../components/progress-ring.js';
 import { createWaterTracker } from '../components/water-tracker.js';
 import { showModal } from '../components/modal.js';
 import { showToast } from '../components/toast.js';
-import { getContextualTip } from '../data/tips.js';
-
 let unsubscribeStore = null;
 
 export function render(container) {
@@ -18,19 +16,47 @@ export function render(container) {
     return 'Good night';
   }
 
-  function updateDashboard() {
-    const state = store.getState();
-    const totals = store.getTodayTotals();
-    const goals = store.getGoals();
+
+  async function updateDashboard() {
+    const goals   = store.getGoals();
     const profile = store.getProfile();
-    const streak = store.getStreak();
+    const streak  = store.getStreak();
+    const state   = store.getState();
+    const displayName = profile.name || state.session || 'there';
+
+    // ── Fetch TODAY's meals from MySQL (server filters by CURDATE()) ────
+    let dbMeals = [];
+    let totals  = { calories: 0, protein: 0, carbs: 0, fat: 0 };
+
+    try {
+      const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+      if (currentUser?.id) {
+        const res = await fetch(`http://localhost:5000/meals/${currentUser.id}/today`);
+        dbMeals   = await res.json();
+        if (!Array.isArray(dbMeals)) dbMeals = [];
+
+        dbMeals.forEach(m => {
+          totals.calories += Number(m.calories || 0);
+          totals.protein  += Number(m.protein  || 0);
+          totals.carbs    += Number(m.carbs    || 0);
+          totals.fat      += Number(m.fat      || 0);
+        });
+        totals.calories = Math.round(totals.calories);
+        totals.protein  = Math.round(totals.protein);
+        totals.carbs    = Math.round(totals.carbs);
+        totals.fat      = Math.round(totals.fat);
+        console.log('[Home] Today totals from DB:', totals, '| meals count:', dbMeals.length);
+      }
+    } catch (e) {
+      console.warn('[Home] DB fetch failed, using store fallback:', e.message);
+      totals = store.getTodayTotals();
+    }
+
 
     const remainingCal = Math.max(goals.calories - totals.calories, 0);
+    
 
-    // Contextual AI tip
-    const aiTip = getContextualTip({ ...totals, water: store.getWater() });
-
-    container.innerHTML = `
+        container.innerHTML = `
       <div class="nv-home home-screen animate-fadeIn">
         
         <div class="nv-home-hero nv-glass nv-glow-border">
@@ -38,10 +64,10 @@ export function render(container) {
             <p class="nv-home-greeting">${getGreeting()}</p>
             <div style="display:flex;gap:8px;">
               <div class="nv-stat-pill" style="cursor:pointer;" onclick="window.location.hash='#streaks'">🔥 ${streak.current || 0}</div>
-              <div class="nv-stat-pill" style="width:36px;height:36px;padding:0;justify-content:center;cursor:pointer;background:var(--gradient-primary);border:none;" onclick="window.location.hash='#profile'">${(profile.name || 'A')[0].toUpperCase()}</div>
+              <div class="nv-stat-pill" style="width:36px;height:36px;padding:0;justify-content:center;cursor:pointer;background:var(--gradient-primary);border:none;" onclick="window.location.hash='#profile'">${(displayName)[0].toUpperCase()}</div>
             </div>
           </div>
-          <h1 class="nv-home-title">Hey <span>${profile.name || 'Alex'}</span></h1>
+          <h1 class="nv-home-title">Hey <span>${displayName}</span></h1>
           <p style="font-size:0.82rem;color:var(--text-secondary);margin:0;line-height:1.5;">${remainingCal > 0 ? `${remainingCal} kcal left today` : 'Daily goal reached! 🎉'}</p>
         </div>
 
@@ -81,21 +107,7 @@ export function render(container) {
           </div>
         </div>
 
-        <!-- AI Insight Box -->
-        <div class="insight-card nv-glass" style="display: flex; gap: 12px; align-items: flex-start; padding: 16px; margin-bottom: 20px; border-left: 4px solid var(--accent-purple);">
-          <div style="color: var(--accent-purple); display:flex; align-items:center; margin-top: 2px;">
-            <i data-lucide="brain" style="width: 20px; height: 20px;"></i>
-          </div>
-          <div style="flex:1;">
-            <div style="display:flex; align-items:center; gap: 6px; margin-bottom: 4px;">
-              <span class="font-display" style="font-size: 0.85rem; font-weight: 800; color: var(--text-primary);">AI Nutrition Insight</span>
-              <span class="badge" style="background: rgba(108, 92, 231, 0.15); color: var(--accent-purple-light); font-size: 0.65rem; padding: 2px 6px; border-radius: var(--radius-full); font-weight:700;">PRO</span>
-            </div>
-            <p style="font-size: 0.8rem; color: var(--text-secondary); line-height: 1.45; margin:0;">
-              ${aiTip}
-            </p>
-          </div>
-        </div>
+      
 
         <!-- Quick Actions Panel -->
         <div style="margin-bottom: 24px;">
@@ -185,26 +197,38 @@ export function render(container) {
     });
     container.querySelector('#fat-ring-mount').appendChild(fatRing);
 
-    // Render compact list of today's meals
+    // Render compact list of today's meals from DB
     const mealsList = container.querySelector('.today-meals-list');
-    const todayMeals = store.getTodayMeals();
-    const flatMeals = [];
 
-    ['breakfast', 'lunch', 'dinner', 'snacks'].forEach(type => {
-      if (todayMeals[type]) {
-        todayMeals[type].forEach(f => {
-          flatMeals.push({ ...f, mealType: type });
-        });
-      }
-    });
+    // Build flat list from DB meals (show today's meals by meal_type)
+    const flatMeals = dbMeals.map(m => ({
+      name:     m.food_name,
+      calories: Number(m.calories || 0),
+      mealType: m.meal_type,
+      icon:     m.icon || '🍲'
+    }));
 
     if (flatMeals.length === 0) {
       mealsList.innerHTML = `
-        <div class="card glass-card" style="padding: 24px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; border: 1px dashed var(--glass-border);">
-          <span style="font-size: 1.5rem;">🥗</span>
-          <p style="font-size: 0.8rem; color: var(--text-secondary); margin:0;">No meals logged today yet. Tap Scan below to start!</p>
+        <div class="card glass-card" style="padding: 28px 20px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 12px; border: 1px dashed rgba(253,121,168,0.3); background: rgba(253,121,168,0.03);">
+          <div style="width: 64px; height: 64px; border-radius: 50%; background: rgba(253,121,168,0.12); display: flex; align-items: center; justify-content: center; font-size: 1.75rem;">
+            📸
+          </div>
+          <div>
+            <p class="font-display" style="font-size: 0.95rem; font-weight: 800; color: var(--text-primary); margin: 0 0 4px;">No meals logged today</p>
+            <p style="font-size: 0.78rem; color: var(--text-secondary); margin: 0; line-height: 1.5;">Scan your food with AI to instantly get<br/>calories, protein, carbs &amp; fat.</p>
+          </div>
+          <button class="btn-empty-scan" style="padding: 10px 24px; border-radius: var(--radius-full); background: var(--gradient-primary); color: white; font-size: 0.82rem; font-weight: 700; border: none; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+            <i data-lucide="camera" style="width: 14px; height: 14px;"></i> Scan First Meal
+          </button>
         </div>
       `;
+      const emptyBtn = mealsList.querySelector('.btn-empty-scan');
+      if (emptyBtn) {
+        emptyBtn.addEventListener('click', () => router.navigate('scanner', { transition: 'slide-up' }));
+      }
+      if (window.lucide) window.lucide.createIcons();
+
     } else {
       flatMeals.slice(0, 3).forEach(f => {
         const item = document.createElement('div');
@@ -303,9 +327,8 @@ export function render(container) {
   // Draw dashboard initially
   updateDashboard();
 
-  // Sub for updates
+  // Re-render when store changes (fires after store.addMeal from scanner)
   unsubscribeStore = store.subscribe(() => {
-    // Check if we are still on the home view to prevent redraws on other routes
     if (router.getCurrentRoute() === 'home') {
       updateDashboard();
     }

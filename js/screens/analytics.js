@@ -14,6 +14,30 @@ export function render(container) {
     const weekData = store.getWeekData();
     const monthData = store.getMonthData();
     const streak = store.getStreak();
+    const hasData = store.hasAnyData(30);
+
+    // Show empty state if no real food data exists
+    if (!hasData) {
+      container.innerHTML = `
+        <div class="analytics-screen animate-fadeIn" style="padding: 20px 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 70vh; gap: 0;">
+          <div style="text-align: center; padding: 20px;">
+            <div style="width: 100px; height: 100px; border-radius: 50%; background: rgba(253,121,168,0.1); display: flex; align-items: center; justify-content: center; font-size: 3rem; margin: 0 auto 24px; border: 2px dashed rgba(253,121,168,0.25);">
+              📊
+            </div>
+            <h2 class="font-display" style="font-size: 1.4rem; font-weight: 800; color: var(--text-primary); margin: 0 0 10px;">No Data Yet</h2>
+            <p style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.6; margin: 0 0 28px; max-width: 260px;">
+              Start logging meals with AI to unlock beautiful charts, weekly trends, and personalized insights.
+            </p>
+            <button class="btn btn-primary" style="padding: 12px 32px; font-size: 0.9rem; border-radius: var(--radius-full);" onclick="window.location.hash='#scanner'">
+              <i data-lucide="camera" style="width: 16px; height: 16px;"></i>
+              &nbsp;Scan First Meal
+            </button>
+          </div>
+        </div>
+      `;
+      if (window.lucide) window.lucide.createIcons();
+      return;
+    }
 
     // Calculate averages & metrics
     const dataSet = activeTab === 'week' ? weekData : monthData;
@@ -33,16 +57,6 @@ export function render(container) {
     const avgC = Math.round(totalC / dataSet.length);
     const avgF = Math.round(totalF / dataSet.length);
     const consistencyPercent = Math.round((loggedDays / dataSet.length) * 100);
-
-    // AI Insight texts generator
-    let pDiff = Math.round((avgP / goals.protein) * 100);
-    let insight1 = `Your protein intake averages <strong>${avgP}g/day</strong>, meeting <strong>${pDiff}%</strong> of your target goal. Keep up the high protein density!`;
-    if (pDiff < 80) {
-      insight1 = `You average <strong>${avgP}g/day</strong> of protein (target: ${goals.protein}g). Try adding greek yogurt or eggs to breakfast to close the gap. 🍳`;
-    }
-
-    let consistencyInsight = `Logging consistency is at <strong>${consistencyPercent}%</strong>. ${consistencyPercent >= 80 ? 'Incredible discipline, you are building locked-in habits! 🔥' : 'Consistency breeds success. Set daily tracking reminders to stay aligned.'}`;
-
     container.innerHTML = `
       <div class="analytics-screen animate-fadeIn" style="padding: 20px 16px 0 16px;">
         
@@ -165,17 +179,6 @@ export function render(container) {
           </div>
         </div>
 
-        <!-- AI insights analysis -->
-        <div class="card glass-card" style="padding: 16px; margin-bottom: 40px; display: flex; flex-direction: column; gap: 12px; border-left: 4px solid var(--accent-teal);">
-          <div style="display:flex; align-items:center; gap: 6px;">
-            <span style="color: var(--accent-teal); display:flex;"><i data-lucide="brain" style="width: 16px; height: 16px;"></i></span>
-            <h3 class="font-display" style="font-size: 0.95rem; font-weight: 800; color: var(--text-primary); margin:0;">AI Trend Analysis</h3>
-          </div>
-          <ul style="font-size: 0.8rem; color: var(--text-secondary); padding-left: 16px; line-height: 1.6; margin: 0; display:flex; flex-direction:column; gap: 8px;">
-            <li>${insight1}</li>
-            <li>${consistencyInsight}</li>
-          </ul>
-        </div>
 
       </div>
     `;
@@ -184,9 +187,15 @@ export function render(container) {
       window.lucide.createIcons();
     }
 
-    // Mount Canvas Bar Chart
-    const chartLabels = weekData.map(d => d.label);
-    const chartValues = weekData.map(d => d.calories);
+    // Mount Canvas Bar Chart — use the correct dataset based on active tab
+    const chartData = activeTab === 'week' ? weekData : monthData;
+    const chartLabels = activeTab === 'week'
+      ? chartData.map(d => d.label)
+      : chartData.map(d => {
+          const dt = new Date(d.date + 'T12:00:00');
+          return `${dt.getMonth() + 1}/${dt.getDate()}`;
+        });
+    const chartValues = chartData.map(d => d.calories);
 
     if (chartInstance && typeof chartInstance.cleanup === 'function') {
       chartInstance.cleanup();

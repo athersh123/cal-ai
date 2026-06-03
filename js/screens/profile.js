@@ -5,8 +5,6 @@ import { theme } from '../theme.js';
 import { createLineChart } from '../components/chart.js';
 import { showModal } from '../components/modal.js';
 import { showToast } from '../components/toast.js';
-import { getOpenAiApiKey, setOpenAiApiKey, hasVisionApi } from '../services/food-vision.js';
-
 let unsubscribeStore = null;
 let weightChartInstance = null;
 
@@ -118,26 +116,6 @@ export function render(container) {
           <div id="weight-chart-mount" style="width: 100%;"></div>
         </div>
 
-        <!-- AI Vision API -->
-        <div class="card glass-card nv-glow-border" style="padding: 18px; margin-bottom: 20px;">
-          <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
-            <div style="width:40px;height:40px;border-radius:12px;background:var(--gradient-protein);display:flex;align-items:center;justify-content:center;">
-              <i data-lucide="sparkles" style="width:20px;height:20px;color:white;"></i>
-            </div>
-            <div>
-              <h3 class="font-display" style="font-size:0.95rem;font-weight:800;color:var(--text-primary);margin:0;">AI Food Vision</h3>
-              <p style="font-size:0.72rem;color:var(--text-secondary);margin:2px 0 0;">${hasVisionApi() ? '✓ Accurate mode active' : 'Demo mode — add API key'}</p>
-            </div>
-          </div>
-          <p style="font-size:0.78rem;color:var(--text-secondary);line-height:1.5;margin:0 0 12px;">
-            Connect OpenAI for real photo analysis (identifies what's actually on your plate).
-          </p>
-          <input type="password" class="nv-ai-key-input profile-openai-key" placeholder="sk-..." value="${getOpenAiApiKey() ? '••••••••••••' + getOpenAiApiKey().slice(-6) : ''}" autocomplete="off" />
-          <div style="display:flex;gap:8px;margin-top:10px;">
-            <button class="btn btn-primary btn-save-ai-key" style="flex:1;height:42px;font-size:0.82rem;">Save API Key</button>
-            <button class="btn btn-ghost btn-clear-ai-key" style="height:42px;font-size:0.82rem;padding:0 14px;">Clear</button>
-          </div>
-        </div>
 
         <!-- Setting Options List -->
         <div class="card glass-card" style="padding: 12px; margin-bottom: 24px; display: flex; flex-direction: column; gap: 4px;">
@@ -172,11 +150,7 @@ export function render(container) {
           </div>
         </div>
 
-        <!-- Info tagline footer -->
-        <p style="font-size: 0.7rem; color: var(--text-tertiary); text-align: center; margin: 0;">
-          NutriVision AI v1.0.0 — Build #2026<br/>
-          Made with ❤️ and Intelligent Neural Models
-        </p>
+      
 
         <div style="margin-top: 18px;">
           <button class="btn btn-danger btn-block btn-logout" style="height: 46px; font-size: 0.9rem;">
@@ -199,28 +173,44 @@ export function render(container) {
       showToast({ message: 'Logged out', type: 'success' });
     });
 
-    // Mount Canvas Line Chart
-    const wtLabels = weightHistory.map(w => {
-      const dNum = new Date(w.date + 'T12:00:00').getDate();
-      const mNum = new Date(w.date + 'T12:00:00').getMonth() + 1;
-      return `${mNum}/${dNum}`;
-    });
-    const wtValues = weightHistory.map(w => w.weight);
+    // Mount Canvas Line Chart or Empty State
+    const mountEl = container.querySelector('#weight-chart-mount');
+    if (weightHistory.length === 0) {
+      mountEl.innerHTML = `
+        <div style="padding: 24px 16px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; border: 1px dashed var(--glass-border); border-radius: var(--radius-md); background: rgba(255,255,255,0.01);">
+          <div style="width: 40px; height: 40px; border-radius: 50%; background: rgba(0, 206, 201, 0.1); border: 1px solid rgba(0, 206, 201, 0.2); display: flex; align-items: center; justify-content: center; color: var(--accent-teal); margin-bottom: 4px;">
+            <i data-lucide="scale" style="width: 18px; height: 18px;"></i>
+          </div>
+          <span style="font-size: 0.82rem; font-weight: 700; color: var(--text-primary);">No Weight Entries Yet</span>
+          <span style="font-size: 0.7rem; color: var(--text-secondary); max-width: 210px; line-height: 1.4; margin: 0;">Log your weight to start visualizing your body composition progress.</span>
+        </div>
+      `;
+      if (window.lucide) {
+        window.lucide.createIcons();
+      }
+    } else {
+      const wtLabels = weightHistory.map(w => {
+        const dNum = new Date(w.date + 'T12:00:00').getDate();
+        const mNum = new Date(w.date + 'T12:00:00').getMonth() + 1;
+        return `${mNum}/${dNum}`;
+      });
+      const wtValues = weightHistory.map(w => w.weight);
 
-    if (weightChartInstance && typeof weightChartInstance.cleanup === 'function') {
-      weightChartInstance.cleanup();
+      if (weightChartInstance && typeof weightChartInstance.cleanup === 'function') {
+        weightChartInstance.cleanup();
+      }
+
+      weightChartInstance = createLineChart({
+        data: wtValues,
+        labels: wtLabels,
+        color: 'var(--accent-teal)',
+        height: 140,
+        animate: true,
+        showDots: true,
+        smooth: true
+      });
+      mountEl.appendChild(weightChartInstance);
     }
-
-    weightChartInstance = createLineChart({
-      data: wtValues,
-      labels: wtLabels,
-      color: 'var(--accent-teal)',
-      height: 140,
-      animate: true,
-      showDots: true,
-      smooth: true
-    });
-    container.querySelector('#weight-chart-mount').appendChild(weightChartInstance);
 
     // Bind Edit Profile handler
     container.querySelector('.btn-edit-profile').addEventListener('click', () => {
@@ -311,37 +301,6 @@ export function render(container) {
       });
     });
 
-    const saveAiKeyBtn = container.querySelector('.btn-save-ai-key');
-    const clearAiKeyBtn = container.querySelector('.btn-clear-ai-key');
-    const aiKeyInput = container.querySelector('.profile-openai-key');
-
-    if (saveAiKeyBtn && aiKeyInput) {
-      saveAiKeyBtn.addEventListener('click', () => {
-        let key = aiKeyInput.value.trim();
-        if (key.startsWith('••••')) {
-          showToast({ message: 'Enter your full API key (sk-...)', type: 'info' });
-          return;
-        }
-        if (!key.startsWith('sk-')) {
-          showToast({ message: 'Invalid key format. Should start with sk-', type: 'error' });
-          return;
-        }
-        setOpenAiApiKey(key);
-        showToast({ message: 'AI Vision enabled! Scan food for accurate results.', type: 'success' });
-        updateProfileView();
-      });
-      aiKeyInput.addEventListener('focus', () => {
-        if (aiKeyInput.value.startsWith('••••')) aiKeyInput.value = '';
-      });
-    }
-
-    if (clearAiKeyBtn) {
-      clearAiKeyBtn.addEventListener('click', () => {
-        setOpenAiApiKey('');
-        showToast({ message: 'API key removed', type: 'info' });
-        updateProfileView();
-      });
-    }
 
     // Theme Toggle Click Row
     container.querySelector('#toggle-theme-row').addEventListener('click', () => {

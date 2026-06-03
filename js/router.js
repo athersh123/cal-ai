@@ -23,7 +23,14 @@ export const router = {
   },
 
   navigate(path, options = {}) {
+
+    localStorage.setItem(
+        "currentRoute",
+        path
+    );
+
     const routeConfig = this.routes[path];
+
     if (!routeConfig) {
       console.warn(`[Router] Route not found: ${path}`);
       return;

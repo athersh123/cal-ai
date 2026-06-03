@@ -1,4 +1,5 @@
 // store.js — NutriVision AI Reactive State Management (localStorage-backed)
+// Real data only — no sample/demo seeding.
 
 const STORAGE_KEY = 'nutrivision_state';
 
@@ -14,6 +15,17 @@ function getDateStr(daysAgo) {
 
 function generateId() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+}
+
+function getStringHash(str) {
+  if (!str) return '';
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash |= 0;
+  }
+  return Math.abs(hash).toString(16);
 }
 
 function deepMerge(target, source) {
@@ -35,107 +47,11 @@ function deepMerge(target, source) {
   return output;
 }
 
-// ── Sample data generator ──
-function buildSampleData() {
-  const today = getToday();
-  const meals = {};
-  const water = {};
-
-  // Sample food pools (id references to food-db, but we store full food objects inline)
-  const sampleFoods = {
-    breakfast: [
-      { id: 'eggs', name: 'Eggs', category: 'protein', calories: 156, protein: 12.6, carbs: 1.2, fat: 10.6, fiber: 0, serving: 2, servingUnit: 'large', icon: '🥚', confidence: 0.98 },
-      { id: 'oatmeal', name: 'Oatmeal', category: 'grain', calories: 154, protein: 5.3, carbs: 27, fat: 2.6, fiber: 4.0, serving: 234, servingUnit: 'g', icon: '🥣', confidence: 0.95 },
-      { id: 'banana', name: 'Banana', category: 'fruit', calories: 105, protein: 1.3, carbs: 27, fat: 0.4, fiber: 3.1, serving: 1, servingUnit: 'medium', icon: '🍌', confidence: 0.98 },
-      { id: 'coffee_black', name: 'Black Coffee', category: 'beverage', calories: 2, protein: 0.3, carbs: 0, fat: 0, fiber: 0, serving: 240, servingUnit: 'ml', icon: '☕', confidence: 0.97 },
-      { id: 'greek_yogurt', name: 'Greek Yogurt', category: 'dairy', calories: 100, protein: 17, carbs: 6, fat: 0.7, fiber: 0, serving: 170, servingUnit: 'g', icon: '🥛', confidence: 0.95 },
-      { id: 'bread_wheat', name: 'Wheat Bread', category: 'grain', calories: 79, protein: 4.0, carbs: 15, fat: 1.0, fiber: 1.9, serving: 1, servingUnit: 'slice', icon: '🍞', confidence: 0.96 },
-      { id: 'pancakes', name: 'Pancakes', category: 'meal', calories: 280, protein: 8, carbs: 40, fat: 10, fiber: 1.5, serving: 3, servingUnit: 'pieces', icon: '🥞', confidence: 0.96 },
-    ],
-    lunch: [
-      { id: 'chicken_breast', name: 'Chicken Breast', category: 'protein', calories: 165, protein: 31, carbs: 0, fat: 3.6, fiber: 0, serving: 100, servingUnit: 'g', icon: '🍗', confidence: 0.96 },
-      { id: 'white_rice', name: 'White Rice', category: 'grain', calories: 206, protein: 4.3, carbs: 45, fat: 0.4, fiber: 0.6, serving: 158, servingUnit: 'g', icon: '🍚', confidence: 0.95 },
-      { id: 'caesar_salad', name: 'Caesar Salad', category: 'meal', calories: 180, protein: 7, carbs: 8, fat: 14, fiber: 3.0, serving: 1, servingUnit: 'bowl', icon: '🥗', confidence: 0.94 },
-      { id: 'sandwich', name: 'Turkey Sandwich', category: 'meal', calories: 350, protein: 24, carbs: 35, fat: 12, fiber: 3.0, serving: 1, servingUnit: 'sandwich', icon: '🥪', confidence: 0.95 },
-      { id: 'broccoli', name: 'Broccoli', category: 'vegetable', calories: 55, protein: 3.7, carbs: 11, fat: 0.6, fiber: 5.1, serving: 150, servingUnit: 'g', icon: '🥦', confidence: 0.96 },
-    ],
-    dinner: [
-      { id: 'salmon', name: 'Salmon Fillet', category: 'protein', calories: 208, protein: 20, carbs: 0, fat: 13, fiber: 0, serving: 100, servingUnit: 'g', icon: '🐟', confidence: 0.95 },
-      { id: 'pasta', name: 'Pasta (cooked)', category: 'grain', calories: 220, protein: 8.1, carbs: 43, fat: 1.3, fiber: 2.5, serving: 140, servingUnit: 'g', icon: '🍝', confidence: 0.94 },
-      { id: 'beef_steak', name: 'Beef Steak', category: 'protein', calories: 271, protein: 26, carbs: 0, fat: 18, fiber: 0, serving: 100, servingUnit: 'g', icon: '🥩', confidence: 0.95 },
-      { id: 'sweet_potato', name: 'Sweet Potato', category: 'vegetable', calories: 103, protein: 2.3, carbs: 24, fat: 0.1, fiber: 3.8, serving: 1, servingUnit: 'medium', icon: '🍠', confidence: 0.94 },
-      { id: 'grilled_chicken_salad', name: 'Grilled Chicken Salad', category: 'meal', calories: 320, protein: 35, carbs: 12, fat: 15, fiber: 4.0, serving: 1, servingUnit: 'bowl', icon: '🥗', confidence: 0.94 },
-    ],
-    snacks: [
-      { id: 'almonds', name: 'Almonds', category: 'snack', calories: 164, protein: 6.0, carbs: 6, fat: 14, fiber: 3.5, serving: 28, servingUnit: 'g', icon: '🥜', confidence: 0.94 },
-      { id: 'apple', name: 'Apple', category: 'fruit', calories: 95, protein: 0.5, carbs: 25, fat: 0.3, fiber: 4.4, serving: 1, servingUnit: 'medium', icon: '🍎', confidence: 0.97 },
-      { id: 'protein_bar', name: 'Protein Bar', category: 'snack', calories: 210, protein: 20, carbs: 22, fat: 7, fiber: 3.0, serving: 1, servingUnit: 'bar', icon: '🍫', confidence: 0.92 },
-    ],
-  };
-
-  function pickRandom(arr, count) {
-    const shuffled = [...arr].sort(() => Math.random() - 0.5);
-    return shuffled.slice(0, count).map(f => ({ ...f, mealId: generateId() }));
-  }
-
-  // Generate 7 days of data (today + last 6 days)
-  for (let i = 0; i < 7; i++) {
-    const date = getDateStr(i);
-    meals[date] = {
-      breakfast: pickRandom(sampleFoods.breakfast, i === 0 ? 3 : 2 + Math.floor(Math.random() * 2)),
-      lunch: pickRandom(sampleFoods.lunch, 2 + Math.floor(Math.random() * 2)),
-      dinner: i === 0 ? [] : pickRandom(sampleFoods.dinner, 2 + Math.floor(Math.random() * 2)),
-      snacks: Math.random() > 0.3 ? pickRandom(sampleFoods.snacks, 1 + Math.floor(Math.random() * 2)) : [],
-    };
-
-    // Water: 1500-2600ml
-    water[date] = 1500 + Math.floor(Math.random() * 1100);
-  }
-
-  // Make today's water a bit lower so the tracker is interesting
-  water[today] = 1200;
-
-  // Weight history over 7 days showing slight progress
-  const weightHistory = [];
-  for (let i = 6; i >= 0; i--) {
-    weightHistory.push({
-      date: getDateStr(i),
-      weight: parseFloat((72.5 - i * 0.08 + (Math.random() * 0.4 - 0.2)).toFixed(1)),
-    });
-  }
-
-  // Count total meals
-  let totalMeals = 0;
-  for (const date of Object.keys(meals)) {
-    for (const type of ['breakfast', 'lunch', 'dinner', 'snacks']) {
-      totalMeals += meals[date][type].length;
-    }
-  }
-
-  return {
-    profile: { name: 'Alex', age: 28, height: 175, weight: 72, goal: 'maintain', avatar: null },
-    goals: { calories: 2200, protein: 150, carbs: 250, fat: 75, water: 2500 },
-    meals,
-    water,
-    weightHistory,
-    achievements: [
-      { id: 'streak_3', unlockedAt: getDateStr(2) },
-      { id: 'meals_10', unlockedAt: getDateStr(3) },
-      { id: 'weight_1', unlockedAt: getDateStr(5) },
-      { id: 'scan_1', unlockedAt: getDateStr(4) },
-    ],
-    streak: { current: 7, best: 7, lastLogDate: getToday() },
-    settings: { theme: 'dark', notifications: true, reminders: true },
-    onboarded: true,
-    scanCount: 3,
-    totalMealsLogged: totalMeals,
-  };
-}
-
 function getDefaultState() {
   return {
-    profile: { name: 'Alex', age: 28, height: 175, weight: 72, goal: 'maintain', avatar: null },
-    goals: { calories: 2200, protein: 150, carbs: 250, fat: 75, water: 2500 },
+    version: 2,
+    profile: { name: '', age: null, height: null, weight: null, goal: 'maintain', avatar: null },
+    goals: { calories: 2000, protein: 120, carbs: 220, fat: 65, water: 2500 },
     meals: {},
     water: {},
     weightHistory: [],
@@ -145,9 +61,9 @@ function getDefaultState() {
     onboarded: false,
     scanCount: 0,
     totalMealsLogged: 0,
-    session: null, // Holds the username if logged in
-    users: [], // Registered users list { username, password }
-    userProfiles: {} // Per-user profiles keyed by username (lowercased)
+    session: null,
+    users: [],
+    userProfiles: {}
   };
 }
 
@@ -161,15 +77,23 @@ function loadState() {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
+      // Migration check: wipe if old model/no version or version < 2
+      if (!parsed || typeof parsed !== 'object' || !parsed.version || parsed.version < 2) {
+        console.log('[Store] Outdated/mock state detected, clearing to ensure 100% clean user data...');
+        localStorage.removeItem(STORAGE_KEY);
+        const fresh = getDefaultState();
+        saveState(fresh);
+        return fresh;
+      }
       return deepMerge(getDefaultState(), parsed);
     }
   } catch (e) {
     console.warn('[Store] Failed to parse localStorage, using defaults.', e);
   }
-  // First load: populate with sample data
-  const sample = buildSampleData();
-  saveState(sample);
-  return sample;
+  // First load: clean empty state — no demo data injected
+  const fresh = getDefaultState();
+  saveState(fresh);
+  return fresh;
 }
 
 function saveState(state) {
@@ -237,7 +161,25 @@ export const store = {
   addMeal(date, mealType, foods) {
     const d = date || getToday();
     const currentMeals = state.meals[d] || { breakfast: [], lunch: [], dinner: [], snacks: [] };
-    const newFoods = foods.map(f => ({ ...f, mealId: f.mealId || generateId() }));
+    
+    // Process new foods and check for duplicates
+    const newFoods = foods.map(f => {
+      const computedHash = f.imageHash || (f.thumbDataUrl ? getStringHash(f.thumbDataUrl) : '');
+      const captured = f.capturedAt || new Date().toISOString();
+      
+      // Perform duplicate validation check
+      if (store.checkDuplicateMeal(d, f.id, computedHash, captured)) {
+        throw new Error(`Duplicate entry detected for food: "${f.name}". It is already logged!`);
+      }
+      
+      return {
+        ...f,
+        mealId: f.mealId || generateId(),
+        imageHash: computedHash,
+        capturedAt: captured
+      };
+    });
+
     const updatedType = [...currentMeals[mealType], ...newFoods];
 
     store.setState({
@@ -248,8 +190,36 @@ export const store = {
       totalMealsLogged: (state.totalMealsLogged || 0) + newFoods.length,
     });
 
-    // Update streak
+    // Update streak & check achievements
     store.updateStreak();
+    store.checkAndUnlockAchievements();
+  },
+
+  checkDuplicateMeal(date, foodId, imageHash, timestamp) {
+    const d = date || getToday();
+    const todayMeals = store.getMeals(d);
+    const allFoods = [
+      ...todayMeals.breakfast,
+      ...todayMeals.lunch,
+      ...todayMeals.dinner,
+      ...todayMeals.snacks
+    ];
+
+    for (const f of allFoods) {
+      // 1. Check if image hash is identical
+      if (imageHash && f.imageHash === imageHash) {
+        return true;
+      }
+      // 2. Check if food ID matches AND timestamp is within 5 minutes (300,000 ms)
+      if (f.id === foodId && timestamp && f.capturedAt) {
+        const t1 = new Date(timestamp).getTime();
+        const t2 = new Date(f.capturedAt).getTime();
+        if (Math.abs(t1 - t2) < 5 * 60 * 1000) {
+          return true;
+        }
+      }
+    }
+    return false;
   },
 
   removeMeal(date, mealType, mealId) {
@@ -317,6 +287,17 @@ export const store = {
     return data;
   },
 
+  // Returns true if any real meals have been logged in the past N days
+  hasAnyData(days = 30) {
+    for (let i = 0; i < days; i++) {
+      const date = getDateStr(i);
+      const meals = store.getMeals(date);
+      const total = meals.breakfast.length + meals.lunch.length + meals.dinner.length + meals.snacks.length;
+      if (total > 0) return true;
+    }
+    return false;
+  },
+
   getMonthData() {
     const data = [];
     for (let i = 29; i >= 0; i--) {
@@ -334,6 +315,7 @@ export const store = {
     store.setState({
       water: { ...state.water, [d]: current + ml },
     });
+    store.checkAndUnlockAchievements();
   },
 
   getWater(date) {
@@ -353,6 +335,7 @@ export const store = {
     }
     history.sort((a, b) => a.date.localeCompare(b.date));
     store.setState({ weightHistory: history });
+    store.checkAndUnlockAchievements();
   },
 
   getWeightHistory() {
@@ -399,15 +382,52 @@ export const store = {
   unlockAchievement(id) {
     const already = (state.achievements || []).find(a => a.id === id);
     if (already) return;
-
     store.setState({
       achievements: [...(state.achievements || []), { id, unlockedAt: getToday() }],
     });
   },
 
+  // Auto-check and unlock any newly earned achievements based on real data
+  checkAndUnlockAchievements() {
+    const checker = window.__nvAchievementChecker;
+    if (typeof checker !== 'function') return;
+
+    const streak = store.getStreak();
+    const totalMeals = store.getTotalMealsLogged();
+    const scans = store.getScanCount();
+    const goals = store.getGoals();
+    const weights = (state.weightHistory || []).length;
+    const unlocked = (state.achievements || []).map(a => a.id);
+
+    let caloriesGoalDays = 0;
+    let waterGoalDays = 0;
+    for (let i = 0; i < 90; i++) {
+      const date = getDateStr(i);
+      const t = store.getDayTotals(date);
+      if (t.calories > 0 && t.calories <= goals.calories * 1.05) caloriesGoalDays++;
+      const w = store.getWater(date);
+      if (w >= goals.water) waterGoalDays++;
+    }
+
+    const newIds = checker({
+      currentStreak: streak.current,
+      totalMealsLogged: totalMeals,
+      caloriesGoalDays,
+      waterGoalDays,
+      weightLogCount: weights,
+      scanCount: scans,
+      unlockedIds: unlocked,
+    });
+
+    for (const id of newIds) {
+      store.unlockAchievement(id);
+    }
+  },
+
   // ── Stats ──
   incrementScanCount() {
     store.setState({ scanCount: (state.scanCount || 0) + 1 });
+    store.checkAndUnlockAchievements();
   },
 
   getScanCount() {
@@ -424,16 +444,9 @@ export const store = {
   },
 
   completeOnboarding() {
-    // When completing onboarding, populate with sample data
-    const sample = buildSampleData();
-    sample.onboarded = true;
-    // Keep any profile changes the user may have made during onboarding
-    sample.profile = { ...sample.profile, ...state.profile };
-    sample.goals = { ...sample.goals, ...state.goals };
-    sample.settings = { ...sample.settings, ...state.settings };
-    state = sample;
-    saveState(state);
-    notify();
+    // Mark onboarded — NO demo/sample data is injected.
+    // Only real user logs will populate the app.
+    store.setState({ onboarded: true });
   },
 
   getTheme() {
@@ -459,7 +472,7 @@ export const store = {
     if (user && user.password === password) {
       const sessionKey = user.username.toLowerCase();
       const existingProfile = (state.userProfiles || {})[sessionKey];
-      const nextProfile = existingProfile || { ...state.profile, name: user.username };
+      const nextProfile = existingProfile || { ...getDefaultState().profile, name: user.username };
       store.setState({
         session: user.username,
         profile: nextProfile,
@@ -467,12 +480,12 @@ export const store = {
       });
       return true;
     }
-    // Simple mock authentication for testing: if no users are registered, allow any login to make testing frictionless!
+    // Allow login when no users registered (frictionless first-time login)
     if ((state.users || []).length === 0) {
       const newUser = { username, password };
       const sessionKey = username.toLowerCase();
       const existingProfile = (state.userProfiles || {})[sessionKey];
-      const nextProfile = existingProfile || { ...state.profile, name: username };
+      const nextProfile = existingProfile || { ...getDefaultState().profile, name: username };
       store.setState({
         users: [newUser],
         session: username,
@@ -491,7 +504,7 @@ export const store = {
     const newUser = { username, password };
     const sessionKey = username.toLowerCase();
     const existingProfile = (state.userProfiles || {})[sessionKey];
-    const nextProfile = existingProfile || { ...state.profile, name: username };
+    const nextProfile = existingProfile || { ...getDefaultState().profile, name: username };
     store.setState({
       users: [...(state.users || []), newUser],
       session: username,

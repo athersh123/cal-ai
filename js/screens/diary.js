@@ -5,6 +5,7 @@ import { createFoodCard } from '../components/food-card.js';
 import { showToast } from '../components/toast.js';
 import { showModal } from '../components/modal.js';
 import { foodDatabase, recognizeFood } from '../data/food-db.js';
+import { getImageObjectUrl } from '../services/image-store.js';
 
 let selectedDate = new Date().toISOString().split('T')[0];
 let unsubscribeStore = null;
@@ -23,11 +24,68 @@ export function render(container) {
     return dayNames[d.getDay()];
   }
 
-  function updateDiaryView() {
-    const state = store.getState();
-    const dayTotals = store.getDayTotals(selectedDate);
-    const goals = store.getGoals();
-    const meals = store.getMeals(selectedDate);
+
+
+async function updateDiaryView() {
+
+  const currentUser = JSON.parse(
+    localStorage.getItem("currentUser")
+  );
+
+  if (!currentUser) {
+    return;
+  }
+
+const response = await fetch(
+  `http://localhost:5000/meals/${currentUser.id}/date/${selectedDate}`
+);
+
+  const meals = await response.json();
+  const groupedMeals = {
+  breakfast: [],
+  lunch: [],
+  dinner: [],
+  snacks: []
+};
+
+meals.forEach(meal => {
+  if (groupedMeals[meal.meal_type]) {
+    const servingAmt  = meal.serving      ?? 1;
+    const servingUnit = meal.serving_unit ?? 'serving';
+    groupedMeals[meal.meal_type].push({
+      id:            meal.id,
+      name:          meal.food_name,
+      calories:      meal.calories,
+      protein:       meal.protein,
+      carbs:         meal.carbs,
+      fat:           meal.fat,
+      serving:       servingAmt,
+      servingUnit:   servingUnit,
+      servingText:   `${servingAmt} ${servingUnit}`,
+      icon:          meal.icon          || '🍲',
+      thumbDataUrl:  meal.thumb_data_url || null,
+    });
+  }
+});
+
+  console.log("Meals from DB:", meals);
+  const state = store.getState();
+const dayTotals = {
+  calories: 0,
+  protein: 0,
+  carbs: 0,
+  fat: 0
+};
+
+meals.forEach(meal => {
+  dayTotals.calories += Number(meal.calories || 0);
+  dayTotals.protein += Number(meal.protein || 0);
+  dayTotals.carbs += Number(meal.carbs || 0);
+  dayTotals.fat += Number(meal.fat || 0);
+});
+const goals = store.getGoals();
+
+  // existing code continues...
 
     const calPercent = Math.min(Math.round((dayTotals.calories / goals.calories) * 100), 100);
 
@@ -82,7 +140,7 @@ export function render(container) {
         <!-- Meal sections list -->
         <div class="diary-meals-list" style="display: flex; flex-direction: column; gap: 20px; padding-bottom: 110px;">
           ${['breakfast', 'lunch', 'dinner', 'snacks'].map(type => {
-            const sectionMeals = meals[type] || [];
+           const sectionMeals = groupedMeals[type] || [];
             let sectionCal = 0;
             sectionMeals.forEach(f => { sectionCal += f.calories; });
             
@@ -138,7 +196,92 @@ export function render(container) {
     // Append food card items dynamically
     ['breakfast', 'lunch', 'dinner', 'snacks'].forEach(type => {
       const parent = container.querySelector(`.diary-meal-items-container-${type}`);
-      const sectionMeals = meals[type] || [];
+      const sectionMeals = groupedMeals[type] || [];
+
+      function openFoodDetails(food) {
+        const confPct = food.confidence ? Math.round(food.confidence * 100) : null;
+        const captured = food.capturedAt ? new Date(food.capturedAt) : null;
+        const capturedText = captured ? captured.toLocaleString() : '';
+        const provider = food.nutritionSource?.provider || (food.fdcId ? 'usda' : '');
+
+        const content = document.createElement('div');
+        content.style.padding = '0 4px 16px 4px';
+        
+        const emoji = food.icon || '🍲';
+        const imageHtml = food.thumbDataUrl 
+          ? `<div style="border-radius:var(--radius-lg);overflow:hidden;border:1px solid var(--glass-border);background:rgba(255,255,255,0.03);margin-bottom:12px;position:relative;">
+              <img class="detail-food-image" src="${food.thumbDataUrl}" alt="${String(food.name || 'Food').replace(/\"/g, '&quot;')}" style="width:100%;height:220px;object-fit:cover;display:block;" />
+             </div>`
+          : `<div style="border-radius:var(--radius-lg);overflow:hidden;border:1px solid var(--glass-border);background:rgba(255,255,255,0.015);margin-bottom:12px;height:140px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;">
+              <span style="font-size: 2.8rem; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.15));">${emoji}</span>
+              <span style="font-size:0.7rem;color:var(--text-tertiary);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Logged Food Item</span>
+             </div>`;
+
+        content.innerHTML = `
+          <div class="card glass-card" style="padding:12px;">
+            ${imageHtml}
+            <div style="display:flex;flex-direction:column;gap:8px;">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+                <div style="min-width:0;flex:1;">
+                  <div class="font-display" style="font-size:1.05rem;font-weight:850;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${food.name}</div>
+                  <div style="font-size:0.75rem;color:var(--text-secondary);font-weight:550;margin-top:2px;">${food.servingText || `${food.serving} ${food.servingUnit}`}</div>
+                </div>
+                <div class="font-display" style="font-size:1.1rem;font-weight:900;color:var(--accent-pink);text-align:right;">${Math.round(food.calories || 0)} <span style="font-size:0.75rem;font-weight:650;color:var(--text-secondary);">kcal</span></div>
+              </div>
+ 
+              <div style="display:flex;flex-wrap:wrap;gap:6px;margin:2px 0;">
+                ${confPct ? `<span class="macro-pill" style="background:rgba(0,206,201,0.08);color:var(--accent-teal);font-weight:700;">Confidence: ${confPct}%</span>` : ''}
+                ${capturedText ? `<span class="macro-pill" style="background:rgba(255,255,255,0.03);color:var(--text-secondary);font-weight:700;">${capturedText}</span>` : ''}
+                ${provider ? `<span class="macro-pill" style="background:rgba(108,92,231,0.08);color:var(--accent-purple-light);font-weight:800;text-transform:uppercase;letter-spacing:0.4px;">${provider}</span>` : ''}
+              </div>
+ 
+              <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:6px;">
+                <div class="nv-glass" style="padding:10px;border-radius:var(--radius-md);text-align:center;">
+                  <div style="font-size:0.7rem;color:var(--text-tertiary);font-weight:700;">Protein</div>
+                  <div class="font-display" style="font-size:0.95rem;font-weight:900;color:var(--accent-teal);">${Math.round(food.protein || 0)}g</div>
+                </div>
+                <div class="nv-glass" style="padding:10px;border-radius:var(--radius-md);text-align:center;">
+                  <div style="font-size:0.7rem;color:var(--text-tertiary);font-weight:700;">Carbs</div>
+                  <div class="font-display" style="font-size:0.95rem;font-weight:900;color:var(--accent-yellow);">${Math.round(food.carbs || 0)}g</div>
+                </div>
+                <div class="nv-glass" style="padding:10px;border-radius:var(--radius-md);text-align:center;">
+                  <div style="font-size:0.7rem;color:var(--text-tertiary);font-weight:700;">Fat</div>
+                  <div class="font-display" style="font-size:0.95rem;font-weight:900;color:var(--accent-purple-light);">${Math.round(food.fat || 0)}g</div>
+                </div>
+                <div class="nv-glass" style="padding:10px;border-radius:var(--radius-md);text-align:center;">
+                  <div style="font-size:0.7rem;color:var(--text-tertiary);font-weight:700;">Serving</div>
+                  <div class="font-display" style="font-size:0.95rem;font-weight:900;color:var(--text-primary);">${food.servingText ? '1' : (food.serving || 1)}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+
+        let revoke = null;
+        const modal = showModal({
+          title: 'Food Details',
+          content,
+          onClose: () => {
+            if (typeof revoke === 'function') revoke();
+          },
+        });
+
+        // Upgrade from thumbnail to full stored image if available.
+        (async () => {
+          if (!food.imageId) return;
+          try {
+            const obj = await getImageObjectUrl(food.imageId);
+            if (!obj?.url) return;
+            revoke = obj.revoke;
+            const imgEl = document.getElementById('modal-container')?.querySelector('.detail-food-image');
+            if (imgEl) imgEl.src = obj.url;
+          } catch (_) {
+            // Keep thumbnail
+          }
+        })();
+
+        return modal;
+      }
 
       if (sectionMeals.length === 0) {
         parent.innerHTML = `
@@ -149,6 +292,7 @@ export function render(container) {
           const card = createFoodCard({
             food,
             showDelete: true,
+            onTap: (f) => openFoodDetails(f),
             onDelete: (mealId) => {
               store.removeMeal(selectedDate, type, mealId);
               showToast({ message: 'Item removed from diary', type: 'info', duration: 1500 });

@@ -17,11 +17,11 @@ export function render(container) {
     const found = unlocked.find(a => a.id === badgeId);
     return found ? { unlocked: true, date: found.unlockedAt } : { unlocked: false };
   }
-
   function updateStreaksView() {
     const state = store.getState();
     const streak = store.getStreak();
     const unlockedList = store.getUnlockedAchievements();
+    const hasData = store.hasAnyData(30);
     
     // Pick daily challenge based on day
     const dayIndex = new Date().getDay();

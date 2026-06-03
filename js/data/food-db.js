@@ -237,10 +237,16 @@ const colorFoodHints = {
  * @returns {Promise<{red:number,green:number,yellow:number,brown:number,white:number}>}
  */
 export function getImageColorHints(dataUrl) {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
+    const hints = { red: 0, orange: 0, yellow: 0, green: 0, brown: 0, white: 0 };
+    const timeout = setTimeout(() => {
+      resolve(hints);
+    }, 800);
+
     const img = new Image();
     img.crossOrigin = 'anonymous';
     img.onload = () => {
+      clearTimeout(timeout);
       try {
         const canvas = document.createElement('canvas');
         const size = 48;
@@ -249,7 +255,6 @@ export function getImageColorHints(dataUrl) {
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0, size, size);
         const data = ctx.getImageData(0, 0, size, size).data;
-        const hints = { red: 0, orange: 0, yellow: 0, green: 0, brown: 0, white: 0 };
 
         for (let i = 0; i < data.length; i += 4) {
           const r = data[i];
@@ -271,10 +276,13 @@ export function getImageColorHints(dataUrl) {
         }
         resolve(hints);
       } catch (e) {
-        reject(e);
+        resolve(hints);
       }
     };
-    img.onerror = () => reject(new Error('Image load failed'));
+    img.onerror = () => {
+      clearTimeout(timeout);
+      resolve(hints);
+    };
     img.src = dataUrl;
   });
 }

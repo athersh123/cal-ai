@@ -57,7 +57,7 @@ export function render(container) {
     const isLast = currentStep === 2;
 
     container.innerHTML = `
-      <div class="onboarding-screen" style="display:flex;flex-direction:column;height:100dvh;background:var(--bg-primary);overflow:hidden;position:relative;">
+      <div class="onboarding-screen" style="display:flex;flex-direction:column;min-height:100dvh;background:var(--bg-primary);overflow-y:auto;position:relative;box-sizing:border-box;padding-bottom:24px;">
         
         <!-- Background ambient glow -->
         <div style="position:absolute;inset:0;pointer-events:none;z-index:0;">

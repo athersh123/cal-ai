@@ -1,10 +1,8 @@
 // nav-bar.js — Premium bottom navigation bar with glow FAB camera button
 import { router } from '../router.js';
-
 export function createNavBar(activeTab = 'home') {
   const nav = document.createElement('nav');
   nav.className = 'nav-bar';
-
   const tabs = [
     { id: 'home', label: 'Home', icon: 'home' },
     { id: 'diary', label: 'Diary', icon: 'book-open' },
@@ -12,12 +10,11 @@ export function createNavBar(activeTab = 'home') {
     { id: 'analytics', label: 'Trends', icon: 'bar-chart-3' },
     { id: 'profile', label: 'Profile', icon: 'user' }
   ];
-
   tabs.forEach(tab => {
-    if (tab.isFab) {
-      const fabBtn = document.createElement('button');
+    if (tab.isFab) { 
+     const fabBtn = document.createElement('button');
       fabBtn.className = 'nav-fab';
-      fabBtn.setAttribute('aria-label', 'Scan food with AI camera');
+       fabBtn.setAttribute('aria-label', 'Scan food with AI camera');
       fabBtn.innerHTML = `
         <div class="fab-circle">
           <i data-lucide="${tab.icon}"></i>
