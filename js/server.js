@@ -15,13 +15,11 @@ console.log("MY SERVER FILE IS RUNNING");
 console.log("Current Folder:", process.cwd());
 const app = express();
 app.use(cors({
-  origin: (origin, callback) => {
-    if (!origin || origin.startsWith("http://localhost:")) {
-      callback(null, true);
-    } else {
-      callback(new Error("Not allowed by CORS"));
-    }
-  },
+  origin: [
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "https://cal-ai-tau.vercel.app"
+  ],
   methods: ["GET", "POST", "DELETE"],
   credentials: true
 }));
@@ -95,10 +93,9 @@ app.post("/signup", async (req, res) => {
     }
   );
 });
+
 app.post("/login", (req, res) => {
-
   const { email, password } = req.body;
-
   db.query(
     "SELECT * FROM users WHERE email=?",
     [email],
