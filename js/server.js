@@ -1,20 +1,17 @@
-import express from "express";
-import db from "./db.js";
-import cors from "cors";
 import dotenv from "dotenv";
-
+import bcrypt from "bcrypt";
 dotenv.config({
   path: "../.env"
 });
+import express from "express";
+import cors from "cors";
+import db from "./db.js";
 console.log("Current Folder:", process.cwd());
-console.log("Env File Key:", process.env.OPENROUTER_API_KEY);
+
 const OPENROUTER_API_KEY =
 process.env.OPENROUTER_API_KEY;
 console.log("MY SERVER FILE IS RUNNING");
-console.log(
-  "OpenRouter Key:",
-  process.env.OPENROUTER_API_KEY?.substring(0,10)
-);
+
 console.log("Current Folder:", process.cwd());
 const app = express();
 app.use(cors({
@@ -60,63 +57,88 @@ app.get("/", (req, res) => {
 });
 
 app.get("/users", (req, res) => {
-    db.query("SELECT * FROM users", (err, result) => {
+    console.log("NEW USERS ROUTE RUNNING");
+    db.query(
+      "SELECT id, username, email FROM users",
+      (err, result) => {
         if (err) {
             res.status(500).json(err);
             return;
         }
         res.json(result);
-    });
-});
-
-
-app.post("/signup", (req, res) => {
-    const { username, email, password } = req.body;
-    
-    const sql =
-    "INSERT INTO users(username,email,password) VALUES(?,?,?)";
-    
-    db.query(sql,
-        [username,email,password],
-        (err,result)=>{
-            if(err){
-                res.status(500).json(err);
-                return;
-            }
-            res.json({
-                message:"User Registered Successfully"
-            });
-        }
+      }
     );
 });
+
+
+app.post("/signup", async (req, res) => {
+
+  const { username, email, password } = req.body;
+
+  const hashedPassword =
+    await bcrypt.hash(password, 10);
+
+  const sql =
+    "INSERT INTO users(username,email,password) VALUES(?,?,?)";
+
+  db.query(
+    sql,
+    [username, email, hashedPassword],
+    (err, result) => {
+      if (err) {
+        return res.status(500).json(err);
+      }
+
+      res.json({
+        message: "User Registered Successfully"
+      });
+    }
+  );
+});
 app.post("/login", (req, res) => {
-    const { email, password } = req.body;
-    
-    const sql =
-    "SELECT * FROM users WHERE email=? AND password=?";
-    
-    db.query(sql, [email, password], (err, result) => {
-        if (err) {
-            res.status(500).json(err);
-            return;
+
+  const { email, password } = req.body;
+
+  db.query(
+    "SELECT * FROM users WHERE email=?",
+    [email],
+    async (err, result) => {
+
+      if (err) {
+        return res.status(500).json(err);
+      }
+
+      if (result.length === 0) {
+        return res.json({
+          success: false,
+          message: "User not found"
+        });
+      }
+
+      const match =
+        await bcrypt.compare(
+          password,
+          result[0].password
+        );
+
+      if (!match) {
+        return res.json({
+          success: false,
+          message: "Wrong password"
+        });
+      }
+
+      res.json({
+        success: true,
+        user: {
+          id: result[0].id,
+          username: result[0].username,
+          email: result[0].email
         }
-        
-        if (result.length > 0) {
-            res.json({
-                success: true,
-                user: {
-  id: result[0].id,
-  username: result[0].username,
-  email: result[0].email
-}
-            });
-        } else {
-            res.json({
-                success: false,
-                message: "Invalid Email or Password"
-            });
-        }
-    });
+      });
+
+    }
+  );
 });
 app.post("/addMeal", (req, res) => {
     const {
