@@ -112,7 +112,7 @@ function compressImage(dataUrl, maxDim = 1024) {
 async function callOpenAIVisionForPredictions(apiKey, imageDataUrl) {
 
   const res = await fetch(
-    "http://localhost:5000/analyzeFood",
+    "https://nutrivision-backend-09ky.onrender.com/analyzeFood",
     {
       method: "POST",
       headers: {

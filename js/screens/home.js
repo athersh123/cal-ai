@@ -31,7 +31,7 @@ export function render(container) {
     try {
       const currentUser = JSON.parse(localStorage.getItem('currentUser'));
       if (currentUser?.id) {
-        const res = await fetch(`http://localhost:5000/meals/${currentUser.id}/today`);
+        const res = await fetch(`https://nutrivision-backend-09ky.onrender.com/meals/${currentUser.id}/today`);
         dbMeals   = await res.json();
         if (!Array.isArray(dbMeals)) dbMeals = [];
 

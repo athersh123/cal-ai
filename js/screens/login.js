@@ -150,7 +150,7 @@ export function render(container) {
 try {
 
     const response = await fetch(
-        "http://localhost:5000/login",
+        "https://nutrivision-backend-09ky.onrender.com/login",
         {
             method: "POST",
             headers: {

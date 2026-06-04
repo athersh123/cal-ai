@@ -742,7 +742,7 @@ container.querySelector('.btn-save-confirmed-meal')?.addEventListener('click', a
         console.log("Payload:", payload);
 
         // ── 3. POST to backend ────────────────────────────────
-        const response = await fetch('http://localhost:5000/addMeal', {
+        const response = await fetch('https://nutrivision-backend-09ky.onrender.com/addMeal', {
             method:  'POST',
             headers: { 'Content-Type': 'application/json' },
             body:    JSON.stringify(payload)

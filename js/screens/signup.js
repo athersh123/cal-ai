@@ -201,7 +201,7 @@ export function render(container) {
     try {
       const username = email.split('@')[0].slice(0, 24) || 'user';
 
-      const response = await fetch('http://localhost:5000/signup', {
+      const response = await fetch('https://nutrivision-backend-09ky.onrender.com/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, email, password: p }),

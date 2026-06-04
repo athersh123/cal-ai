@@ -37,7 +37,7 @@ async function updateDiaryView() {
   }
 
 const response = await fetch(
-  `http://localhost:5000/meals/${currentUser.id}/date/${selectedDate}`
+  `https://nutrivision-backend-09ky.onrender.com/meals/${currentUser.id}/date/${selectedDate}`
 );
 
   const meals = await response.json();
